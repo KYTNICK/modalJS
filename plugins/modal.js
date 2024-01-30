@@ -1,46 +1,93 @@
+const noop = () => {};
+
+function _createModalFooter(buttons = []) {
+  if (buttons.length === 0) {
+    return document.createElement("div");
+  }
+  const wrap = document.createElement("div");
+  wrap.classList.add("modal-footer");
+
+  buttons.forEach((btn) => {
+    const footerButton = document.createElement("button");
+    footerButton.textContent = btn.text;
+    footerButton.classList.add("btn");
+    footerButton.classList.add("modal-footer__button");
+    footerButton.classList.add(`btn-${btn.type || "secondary"}`);
+    footerButton.onclick = btn.handler || noop;
+    wrap.appendChild(footerButton);
+  });
+  return wrap;
+}
+
 function _createModal(options) {
+  const defaultWidth = "500px";
   const modal = document.createElement("div");
   modal.classList.add("vmodal");
   modal.insertAdjacentHTML(
     "afterbegin",
     `
-    <div class="modal-overlay">
-      <div class="modal-window">
+    <div class="modal-overlay" data-close='true'>
+      <div class="modal-window" style="max-width: ${
+        options.width || defaultWidth
+      }">
         <div class="modal-header">
-          <span class="modal-title">${options.title}</span>
-          <span class="modal-close">&times;</span>
+          <h1 class="modal-title">${options.title || "Window"}</h1>
+          ${
+            options.closable
+              ? `<span class="modal-close" data-close='true'>&times;</span>`
+              : ""
+          }
         </div>
+        <div class="modal-body" data-content>
+        ${options.content || ""}
+      </div>
       </div>
     </div>
   `
   );
+  const modalBody = modal.querySelector(".modal-body");
+
+  const footer = _createModalFooter(options.footerButtons);
+  modalBody.after(footer);
   document.body.appendChild(modal);
   return modal;
 }
 
-$.modal = function (options) {
+$.modal = (options) => {
   const $modal = _createModal(options);
-  //===
-
-  const animationSpeed = 500;
   const modalOpenBtn = document.querySelectorAll(".vmodal-open");
-  const modalCloseBtn = document.querySelector(".modal-close");
-  const modalOverlay = document.querySelector(".modal-overlay");
-  const modalWindow = document.querySelector(".modal-window");
-  //===
-  if (options.closable && options.closable === true) {
-    modalCloseBtn.addEventListener("click", () => {
-      modal.close();
-    });
-  } else {
-    modalCloseBtn.remove();
-  }
 
-  modalOverlay.addEventListener("click", (e) => {
-    if (e.target === modalOverlay) {
+  const animationSpeed = 600;
+  let closing = false;
+  let destroyed = false;
+  const modal = {
+    open() {
+      if (destroyed) {
+        return console.log("modal is destroyed");
+      }
+      !closing && $modal.classList.add("open");
+    },
+    close() {
+      closing = true;
+      $modal.classList.add("hide");
+
+      setTimeout(() => {
+        $modal.classList.remove("hide");
+        $modal.classList.remove("open");
+
+        closing = false;
+      }, animationSpeed);
+    },
+  };
+
+  //==
+  const listener = (e) => {
+    if (e.target.dataset.close) {
       modal.close();
     }
-  });
+  };
+  //==
+
   document.addEventListener("keydown", (key) => {
     if (key.code === "Escape" && !closing) {
       modal.close();
@@ -51,27 +98,17 @@ $.modal = function (options) {
       modal.open();
     });
   });
-  modalWindow.style.width = options.width;
-  let closing = false;
-  return {
-    open() {
-      !closing && $modal.classList.add("open");
-    },
-    close() {
-      closing = true;
-      $modal.classList.remove("open");
-      $modal.classList.add("hide");
-      setTimeout(() => {
-        $modal.classList.remove("hide");
-        closing = false;
-      }, animationSpeed);
-    },
-    destroy() {
-      modalCloseBtn.removeEventListener("click", closeModal);
-      modalOverlay.removeEventListener("click", closeModal);
-      document.removeEventListener("keydown", keydownHandler);
 
-      $modal.remove();
+  $modal.addEventListener("click", listener);
+
+  return Object.assign(modal, {
+    destroy() {
+      $modal.parentNode.removeChild($modal);
+      $modal.removeEventListener("click", listener);
+      destroyed = true;
     },
-  };
+    setContent(html) {
+      $modal.querySelector("[data-content]").innerHTML = html;
+    },
+  });
 };
