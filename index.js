@@ -1,49 +1,92 @@
-const fruits = [
+let fruits = [
   {
     id: 1,
     title: "Apples",
     price: 5,
-    img: "https://www.google.com/url?sa=i&url=https%3A%2F%2Fm.dom-eda.com%2Fingridient%2Fitem%2Fyabloko.html&psig=AOvVaw1jpaiT64hagwg8Aj3CtJze&ust=1706713834433000&source=images&cd=vfe&opi=89978449&ved=0CBIQjRxqFwoTCPCs0dCyhYQDFQAAAAAdAAAAABAE",
+    img: "https://www.applesfromny.com/wp-content/uploads/2020/05/Fortune_NYAS-Apples2.png",
   },
   {
     id: 2,
     title: "Orange",
     price: 35,
-    img: "https://www.google.com/url?sa=i&url=https%3A%2F%2Fwww.fervalle.com%2Fen%2Forange%2F&psig=AOvVaw27G3Faw-aW25hY5Sbf5nR5&ust=1706713900797000&source=images&cd=vfe&opi=89978449&ved=0CBIQjRxqFwoTCOjaqPCyhYQDFQAAAAAdAAAAABAE",
+    img: "https://www.fervalle.com/wp-content/uploads/2022/07/transparent-orange-apple5eacfeae85ac29.7815306015883956945475.png",
   },
   {
     id: 3,
     title: "Mango",
     price: 5,
-    img: "https://www.google.com/url?sa=i&url=https%3A%2F%2Fbefreshcorp.net%2Fru%2Fproduct%2Fmango%2F&psig=AOvVaw0pdFqZt3Hmxv4k_hSMULKF&ust=1706713931419000&source=images&cd=vfe&opi=89978449&ved=0CBIQjRxqFwoTCPD-_P6yhYQDFQAAAAAdAAAAABAE",
+    img: "https://befreshcorp.net/wp-content/uploads/2017/07/product-packshot-mango.jpg",
   },
 ];
 
-const modal = $.modal({
-  title: "Modal Title",
-  closable: true,
-  content: `
-  <p>Lorem ipsum dolor sit.</p>
-  <p>Lorem ipsum dolor sit.</p>
+const toHTML = (fruit) => `
+<div class="col">
+<div class="card">
+  <img
+    src="${fruit.img}"
+    class="card-img-top"
+    alt="${fruit.title}"
+    style="max-width: 100%; height: 300px"
+  />
+  <div class="card-body">
+    <h5 class="card-title">${fruit.title}</h5>
 
-  `,
-  width: "",
+    <a href="#" class="btn btn-primary" data-btn="price" data-id="${fruit.id}">Price</a>
+    <a href="#" class="btn btn-danger" data-btn="remove" data-id="${fruit.id}">Delete</a>
+  </div>
+</div>
+</div>
+`;
+
+function render() {
+  const html = fruits.map(toHTML).join("");
+  document.querySelector("#fruits").innerHTML = html;
+}
+render();
+
+const priceModal = $.modal({
+  title: "The price of the product",
+  closable: true,
+
+  width: "400px",
   footerButtons: [
     {
-      text: "Ok",
+      text: "Close",
       type: "primary",
       handler() {
-        console.log("primary btn clicked");
-        modal.close();
-      },
-    },
-    {
-      text: "Cancel",
-      type: "danger",
-      handler() {
-        console.log("danger btn clicked");
-        modal.close();
+        priceModal.close();
       },
     },
   ],
+});
+
+document.addEventListener("click", (e) => {
+  e.preventDefault();
+  const btnType = e.target.dataset.btn;
+  const id = +e.target.dataset.id;
+  const fruit = fruits.find((f) => f.id === id);
+
+  if (btnType === "price") {
+    priceModal.setContent(
+      `
+        <p>The price of ${fruit.title}: <strong>${fruit.price}$</strong></p>
+      `
+    );
+
+    priceModal.open();
+  } else if (btnType === "remove") {
+    $.confirm({
+      title: "Are you sure?",
+      content: `
+      <p>You want to <strong>${fruit.title}</strong></p>
+      `,
+    })
+      .then(() => {
+        fruits = fruits.filter((f) => f.id !== id);
+        render();
+      })
+      .catch(() => {
+        console.log("cancel");
+      });
+  }
 });

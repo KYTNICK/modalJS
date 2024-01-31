@@ -55,7 +55,6 @@ function _createModal(options) {
 
 $.modal = (options) => {
   const $modal = _createModal(options);
-  const modalOpenBtn = document.querySelectorAll(".vmodal-open");
 
   const animationSpeed = 600;
   let closing = false;
@@ -76,6 +75,10 @@ $.modal = (options) => {
         $modal.classList.remove("open");
 
         closing = false;
+        if (typeof options.onClose === "function") {
+          console.log(typeof options.onClose());
+          options.onClose();
+        }
       }, animationSpeed);
     },
   };
@@ -92,11 +95,6 @@ $.modal = (options) => {
     if (key.code === "Escape" && !closing) {
       modal.close();
     }
-  });
-  modalOpenBtn.forEach((item) => {
-    item.addEventListener("click", () => {
-      modal.open();
-    });
   });
 
   $modal.addEventListener("click", listener);
